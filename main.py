@@ -23,12 +23,15 @@ def index():
         session["expiry"] = time.time() + OTP_EXPIRY_TIME
         session["attempts"] = MAX_ATTEMPTS
 
-        if send_otp(email, otp):
-            return redirect("/verify")
-    else:
-        return render_template("index.html", error="Email service unavailable. Try again later.")
+        # Try sending OTP (works locally, fails on Render)
+        send_otp(email, otp)
+
+        # Always continue to verification for demo purposes
+        return redirect("/verify")
 
     return render_template("index.html")
+
+
 
 
 @app.route("/verify", methods=["GET", "POST"])
