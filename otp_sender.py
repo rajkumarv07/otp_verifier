@@ -1,29 +1,34 @@
-import smtplib
-from email.message import EmailMessage
 import os
+import requests
 
 def send_otp(email, otp):
-    sender_email = os.getenv("EMAIL_ID")
-    app_password = os.getenv("EMAIL_PASSWORD")
+    api_key = os.getenv("SENDGRID_API_KEY")
+    from_email = os.getenv("FROM_EMAIL")
 
-    if not sender_email or not app_password:
-        print("Email credentials not set")
+    if not api_key or not from_email:
+        print("SendGrid environment variables missing")
         return False
 
-    try:
-        msg = EmailMessage()
-        msg.set_content(f"Your OTP is: {otp}")
-        msg["Subject"] = "Your OTP Verification Code"
-        msg["From"] = sender_email
-        msg["To"] = email
+    data = {
+        "personalizations": [
+            {
+                "to": [{"email": email}],
+                "subject": "Your OTP Verification Code"
+            }
+        ],
+        "from": {"email": from_email},
+        "content": [
+            {"type": "text/plain", "value": f"Your OTP is: {otp}"}
+        ]
+    }
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
-            server.login(sender_email, app_password)
-            server.send_message(msg)
+    r = requests.post(
+        "https://api.sendgrid.com/v3/mail/send",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json=data
+    )
 
-        print("✅ OTP sent successfully")
-        return True
-
-    except Exception as e:
-        print("❌ Email sending failed:", e)
-        return False
+    return r.status_code == 202
