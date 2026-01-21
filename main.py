@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 import time
 import os
 
@@ -8,11 +8,10 @@ from otp_verifier import hash_otp, verify_otp_gui
 from config import OTP_EXPIRY_TIME, MAX_ATTEMPTS
 
 app = Flask(__name__)
-app.secret_key = "change-this-secret-key"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    # Always reset old OTP session when starting fresh
     session.clear()
 
     if request.method == "POST":
@@ -23,15 +22,15 @@ def index():
         session["expiry"] = time.time() + OTP_EXPIRY_TIME
         session["attempts"] = MAX_ATTEMPTS
 
-        # Try sending OTP (works locally, fails on Render)
-        send_otp(email, otp)
+        try:
+            send_otp(email, otp)
+        except Exception as e:
+            flash("Failed to send OTP. Please try again later.")
+            print(f"Error sending OTP: {e}")
 
-        # Always continue to verification for demo purposes
         return redirect("/verify")
 
     return render_template("index.html")
-
-
 
 
 @app.route("/verify", methods=["GET", "POST"])
@@ -59,10 +58,8 @@ def verify():
             session["attempts"] -= 1
             if session["attempts"] <= 0:
                 session.clear()
-                return render_template(
-                    "verify.html",
-                    message="Maximum attempts exceeded. Try again."
-                )
+                flash("Too many attempts. Please request a new OTP.")
+                return redirect("/")
 
             message = msg
 
@@ -70,5 +67,5 @@ def verify():
 
 
 if __name__ == "__main__":
-   port = int(os.environ.get("PORT", 5000))
-   app.run(host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
