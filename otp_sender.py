@@ -7,16 +7,23 @@ def send_otp(email, otp):
     app_password = os.getenv("EMAIL_PASSWORD")
 
     if not sender_email or not app_password:
-        raise RuntimeError("Email credentials are not set in environment variables")
+        print("Email credentials not set")
+        return False
 
-    msg = EmailMessage()
-    msg.set_content(f"Your OTP is: {otp}")
-    msg["Subject"] = "Your OTP Verification Code"
-    msg["From"] = sender_email
-    msg["To"] = email
+    try:
+        msg = EmailMessage()
+        msg.set_content(f"Your OTP is: {otp}")
+        msg["Subject"] = "Your OTP Verification Code"
+        msg["From"] = sender_email
+        msg["To"] = email
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(sender_email, app_password)
-        server.send_message(msg)
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+            server.login(sender_email, app_password)
+            server.send_message(msg)
 
-    print("✅ OTP sent successfully")
+        print("✅ OTP sent successfully")
+        return True
+
+    except Exception as e:
+        print("❌ Email sending failed:", e)
+        return False

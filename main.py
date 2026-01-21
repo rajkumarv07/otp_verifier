@@ -23,8 +23,10 @@ def index():
         session["expiry"] = time.time() + OTP_EXPIRY_TIME
         session["attempts"] = MAX_ATTEMPTS
 
-        send_otp(email, otp)
-        return redirect("/verify")
+        if send_otp(email, otp):
+            return redirect("/verify")
+    else:
+        return render_template("index.html", error="Email service unavailable. Try again later.")
 
     return render_template("index.html")
 
