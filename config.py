@@ -1,0 +1,3 @@
+OTP_LENGTH = 6
+OTP_EXPIRY_TIME = 120   # seconds
+MAX_ATTEMPTS = 3
